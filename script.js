@@ -26,6 +26,7 @@ document.addEventListener('DOMContentLoaded', () => {
     let currentPlayer = BLACK_PIECE;
     let selectedPiece = null; // Guarda a peça selecionada { row, col }
     let mandatoryMoves = []; // Guarda os movimentos obrigatórios (capturas)
+    let isAnimating = false; // Flag para controlar a animação
 
     // --- INICIALIZAÇÃO DO JOGO ---
 
@@ -200,6 +201,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function handleCanvasClick(event) {
+        if (isAnimating) return; // Ignora cliques durante a animação
         const rect = canvas.getBoundingClientRect();
         const x = event.clientX - rect.left;
         const y = event.clientY - rect.top;
@@ -238,49 +240,91 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
+    function animatePieceMove(move, piece, onComplete) {
+        const { fromRow, fromCol, toRow, toCol } = move;
+        const startX = fromCol * SQUARE_SIZE + SQUARE_SIZE / 2;
+        const startY = fromRow * SQUARE_SIZE + SQUARE_SIZE / 2;
+        const endX = toCol * SQUARE_SIZE + SQUARE_SIZE / 2;
+        const endY = toRow * SQUARE_SIZE + SQUARE_SIZE / 2;
+
+        const duration = 250; // Duração da animação em milissegundos
+        let startTime = null;
+
+        function animationLoop(timestamp) {
+            if (!startTime) startTime = timestamp;
+            const progress = timestamp - startTime;
+            const fraction = Math.min(progress / duration, 1);
+
+            const currentX = startX + (endX - startX) * fraction;
+            const currentY = startY + (endY - startY) * fraction;
+
+            // 1. Limpa e redesenha o tabuleiro estático (sem a peça que está se movendo)
+            drawBoard();
+            // 2. Desenha a peça em movimento na sua posição atual
+            drawPiece(currentX, currentY, piece);
+
+            if (fraction < 1) {
+                requestAnimationFrame(animationLoop);
+            } else {
+                // Animação concluída, chama o callback para atualizar o estado do jogo
+                onComplete();
+            }
+        }
+
+        requestAnimationFrame(animationLoop);
+    }
+
     function movePiece(move) {
         const { fromRow, fromCol, toRow, toCol, isCapture } = move;
-        let piece = board[fromRow][fromCol];
+        const piece = board[fromRow][fromCol];
 
-        // Move a peça para o novo local
-        board[toRow][toCol] = piece;
-        board[fromRow][fromCol] = EMPTY;
+        isAnimating = true;
+        selectedPiece = null; // Limpa a seleção para remover os destaques visuais durante a animação
 
-        // Remove a peça capturada, se for o caso
+        // Toca o som apropriado
         if (isCapture) {
-            const capturedRow = fromRow + (toRow - fromRow) / 2;
-            const capturedCol = fromCol + (toCol - fromCol) / 2;
-            board[capturedRow][capturedCol] = EMPTY;
             playSound(captureSound);
         } else {
             playSound(moveSound);
         }
 
-        // Lógica de promoção para Dama (King)
-        if (piece === BLACK_PIECE && toRow === BOARD_SIZE - 1) {
-            board[toRow][toCol] = BLACK_KING;
-        } else if (piece === WHITE_PIECE && toRow === 0) {
-            board[toRow][toCol] = WHITE_KING;
-        }
+        // Remove a peça da sua posição inicial no tabuleiro lógico ANTES da animação
+        board[fromRow][fromCol] = EMPTY;
 
-        // Lógica de captura em cadeia
-        if (isCapture) {
-            const chainCaptures = getPossibleMovesForPiece(toRow, toCol).captures;
-            if (chainCaptures.length > 0) {
-                selectedPiece = { row: toRow, col: toCol }; // Mantém a peça selecionada
-                mandatoryMoves = chainCaptures; // Atualiza os movimentos obrigatórios
-                drawBoard();
-                updateScore(); // Atualiza o placar imediatamente
-                return; // Não troca de jogador, força a próxima captura
+        animatePieceMove(move, piece, () => {
+            // --- CALLBACK PÓS-ANIMAÇÃO ---
+            board[toRow][toCol] = piece; // Coloca a peça no seu destino final
+
+            if (isCapture) {
+                const capturedRow = fromRow + (toRow - fromRow) / 2;
+                const capturedCol = fromCol + (toCol - fromCol) / 2;
+                board[capturedRow][capturedCol] = EMPTY;
             }
-        }
 
-        // Se não houver captura em cadeia, finaliza o turno
-        selectedPiece = null;
-        switchPlayer(); // switchPlayer agora também chama calculateTurnMoves
-        updateStatus();
-        updateScore();
-        drawBoard();
+            if (piece === BLACK_PIECE && toRow === BOARD_SIZE - 1) {
+                board[toRow][toCol] = BLACK_KING;
+            } else if (piece === WHITE_PIECE && toRow === 0) {
+                board[toRow][toCol] = WHITE_KING;
+            }
+
+            if (isCapture) {
+                const chainCaptures = getPossibleMovesForPiece(toRow, toCol).captures;
+                if (chainCaptures.length > 0) {
+                    selectedPiece = { row: toRow, col: toCol };
+                    mandatoryMoves = chainCaptures;
+                    isAnimating = false;
+                    drawBoard();
+                    updateScore();
+                    return;
+                }
+            }
+
+            switchPlayer();
+            updateStatus();
+            updateScore();
+            drawBoard();
+            isAnimating = false;
+        });
     }
 
     // --- FUNÇÕES AUXILIARES ---
@@ -314,7 +358,8 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function updateStatus() {
-        statusDisplay.textContent = `Vez das peças ${currentPlayer === BLACK_PIECE ? 'Pretas' : 'Brancas'}`;
+        const playerName = currentPlayer === BLACK_PIECE ? 'Pretas' : 'Brancas';
+        statusDisplay.innerHTML = `Vez das peças <span class="highlight-turn">${playerName}</span>`;
     }
 
     function updateScore() {
@@ -329,7 +374,14 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
             }
         }
-        scoreDisplay.textContent = `Pretas: ${blackCount} - Brancas: ${whiteCount}`;
+
+        const blackText = `Pretas: ${blackCount}`;
+        const whiteText = `Brancas: ${whiteCount}`;
+        if (currentPlayer === BLACK_PIECE) {
+            scoreDisplay.innerHTML = `<span class="highlight-turn">${blackText}</span> - <span>${whiteText}</span>`;
+        } else {
+            scoreDisplay.innerHTML = `<span>${blackText}</span> - <span class="highlight-turn">${whiteText}</span>`;
+        }
 
         // Verifica condição de vitória
         if (whiteCount === 0) {
