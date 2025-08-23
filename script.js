@@ -92,7 +92,7 @@ document.addEventListener('DOMContentLoaded', () => {
     function drawPiece(x, y, pieceType) {
         ctx.beginPath();
         ctx.arc(x, y, SQUARE_SIZE / 2 - 8, 0, 2 * Math.PI);
-        ctx.fillStyle = (pieceType === BLACK_PIECE || pieceType === BLACK_KING) ? '#111' : '#fff';
+        ctx.fillStyle = isBlack(pieceType) ? '#111' : '#fff';
         ctx.fill();
         ctx.strokeStyle = '#555';
         ctx.lineWidth = 2;
@@ -119,18 +119,37 @@ document.addEventListener('DOMContentLoaded', () => {
 
         const captures = [];
         const simples = [];
-        const isKing = piece === BLACK_KING || piece === WHITE_KING;
-        const forwardDir = (piece === BLACK_PIECE || piece === BLACK_KING) ? 1 : -1;
-
-        // Define as direções de movimento (para frente para peças, todas para damas)
-        const moveDirections = isKing ? [[1, 1], [1, -1], [-1, 1], [-1, -1]] : [[forwardDir, 1], [forwardDir, -1]];
+        const isKing = piece === BLACK_KING || piece === WHITE_KING; // A Dama pode se mover em qualquer direção
+        const forwardDir = isBlack(piece) ? 1 : -1;
 
         // Verifica movimentos simples
-        for (const [dRow, dCol] of moveDirections) {
-            const toRow = row + dRow;
-            const toCol = col + dCol;
-            if (isOnBoard(toRow, toCol) && board[toRow][toCol] === EMPTY) {
-                simples.push({ fromRow: row, fromCol: col, toRow, toCol, isCapture: false });
+        if (isKing) {
+            // A Dama (King) pode se mover várias casas em qualquer direção diagonal ("Dama voadora")
+            const moveDirections = [[1, 1], [1, -1], [-1, 1], [-1, -1]];
+            for (const [dRow, dCol] of moveDirections) {
+                let nextRow = row + dRow;
+                let nextCol = col + dCol;
+                // Continua na mesma direção até encontrar uma peça ou sair do tabuleiro
+                while (isOnBoard(nextRow, nextCol)) {
+                    if (board[nextRow][nextCol] === EMPTY) {
+                        simples.push({ fromRow: row, fromCol: col, toRow: nextRow, toCol: nextCol, isCapture: false });
+                        nextRow += dRow;
+                        nextCol += dCol;
+                    } else {
+                        // Caminho bloqueado, para de verificar nesta direção
+                        break;
+                    }
+                }
+            }
+        } else {
+            // Peças comuns se movem apenas uma casa para frente
+            const moveDirections = [[forwardDir, 1], [forwardDir, -1]];
+            for (const [dRow, dCol] of moveDirections) {
+                const toRow = row + dRow;
+                const toCol = col + dCol;
+                if (isOnBoard(toRow, toCol) && board[toRow][toCol] === EMPTY) {
+                    simples.push({ fromRow: row, fromCol: col, toRow, toCol, isCapture: false });
+                }
             }
         }
 
@@ -159,8 +178,8 @@ document.addEventListener('DOMContentLoaded', () => {
         for (let r = 0; r < BOARD_SIZE; r++) {
             for (let c = 0; c < BOARD_SIZE; c++) {
                 const piece = board[r][c];
-                const isCurrentPlayerPiece = (currentPlayer === BLACK_PIECE && (piece === BLACK_PIECE || piece === BLACK_KING)) ||
-                                             (currentPlayer === WHITE_PIECE && (piece === WHITE_PIECE || piece === WHITE_KING));
+                const isCurrentPlayerPiece = (currentPlayer === BLACK_PIECE && isBlack(piece)) ||
+                                             (currentPlayer === WHITE_PIECE && isWhite(piece));
 
                 if (isCurrentPlayerPiece) {
                     const moves = getPossibleMovesForPiece(r, c);
@@ -266,6 +285,14 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // --- FUNÇÕES AUXILIARES ---
 
+    function isBlack(piece) {
+        return piece === BLACK_PIECE || piece === BLACK_KING;
+    }
+
+    function isWhite(piece) {
+        return piece === WHITE_PIECE || piece === WHITE_KING;
+    }
+
     function playSound(sound) {
         if (sound) {
             sound.currentTime = 0;
@@ -278,9 +305,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function isOpponent(piece, playerPiece) {
-        const playerColor = (playerPiece === BLACK_PIECE || playerPiece === BLACK_KING) ? 'black' : 'white';
-        const opponentColor = (piece === BLACK_PIECE || piece === BLACK_KING) ? 'black' : 'white';
-        return piece !== EMPTY && playerColor !== opponentColor;
+        return piece !== EMPTY && isBlack(playerPiece) !== isBlack(piece);
     }
 
     function switchPlayer() {
@@ -297,9 +322,9 @@ document.addEventListener('DOMContentLoaded', () => {
         let whiteCount = 0;
         for (let row = 0; row < BOARD_SIZE; row++) {
             for (let col = 0; col < BOARD_SIZE; col++) {
-                if (board[row][col] === BLACK_PIECE || board[row][col] === BLACK_KING) {
+                if (isBlack(board[row][col])) {
                     blackCount++;
-                } else if (board[row][col] === WHITE_PIECE || board[row][col] === WHITE_KING) {
+                } else if (isWhite(board[row][col])) {
                     whiteCount++;
                 }
             }
