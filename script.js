@@ -1,9 +1,189 @@
 // Aguarda o carregamento completo do HTML para iniciar o jogo
 document.addEventListener('DOMContentLoaded', () => {
+    const speechQueue = [];
+    let isSpeaking = false;
+
+    function processSpeechQueue() {
+        if (speechQueue.length === 0) {
+            isSpeaking = false;
+            if (isVoiceCommandActive) {
+                recognition.start();
+            }
+            return;
+        }
+
+        isSpeaking = true;
+        if (isVoiceCommandActive) {
+            recognition.stop();
+        }
+
+        const { text, callback } = speechQueue.shift();
+        const utterance = new SpeechSynthesisUtterance(text);
+        utterance.lang = 'pt-BR';
+        utterance.rate = 1.2;
+
+        utterance.onend = () => {
+            if (callback) {
+                callback();
+            }
+            processSpeechQueue();
+        };
+
+        speechSynthesis.speak(utterance);
+    }
+
+    function speak(text, callback) {
+        speechQueue.push({ text, callback });
+        if (!isSpeaking) {
+            processSpeechQueue();
+        }
+    }
+
     const canvas = document.getElementById('checkers-board');
     const ctx = canvas.getContext('2d');
     const statusDisplay = document.getElementById('status');
     const scoreDisplay = document.getElementById('score');
+    const voiceToggleBtn = document.getElementById('voice-toggle');
+
+    // --- LÓGICA DE COMANDO DE VOZ ---
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    let recognition;
+    let isVoiceCommandActive = false;
+
+    if (SpeechRecognition) {
+        recognition = new SpeechRecognition();
+        recognition.lang = 'pt-BR';
+        recognition.continuous = false; // Processa um comando por vez
+
+        recognition.onresult = (event) => {
+            const command = event.results[event.results.length - 1][0].transcript.trim().toUpperCase();
+            handleVoiceCommand(command);
+        };
+
+        recognition.onerror = (event) => {
+            console.error('Erro no reconhecimento de voz:', event.error);
+            if (isVoiceCommandActive) {
+                // Reinicia o reconhecimento se houver um erro e ainda estiver ativo
+                setTimeout(() => recognition.start(), 500);
+            }
+        };
+
+        recognition.onend = () => {
+            if (isVoiceCommandActive && !isSpeaking) {
+                // Reinicia o reconhecimento para ouvir o próximo comando
+                setTimeout(() => recognition.start(), 500);
+            }
+        };
+
+    } else {
+        voiceToggleBtn.disabled = true;
+        voiceToggleBtn.textContent = 'Comando de Voz não suportado';
+    }
+
+    function toggleVoiceCommands() {
+        isVoiceCommandActive = !isVoiceCommandActive;
+        if (isVoiceCommandActive) {
+            voiceToggleBtn.textContent = 'Desativar Comandos de Voz';
+            voiceToggleBtn.style.backgroundColor = '#4CAF50'; // Verde
+            recognition.start();
+            speak('Comandos de voz ativados');
+        } else {
+            voiceToggleBtn.textContent = 'Ativar Comandos de Voz';
+            voiceToggleBtn.style.backgroundColor = '';
+            recognition.stop();
+            speak('Comandos de voz desativados');
+        }
+    }
+
+    function handleVoiceCommand(command) {
+        console.log("Comando recebido:", command);
+
+        if (command.includes('CANCELAR')) {
+            if (selectedPiece) {
+                selectedPiece = null;
+                drawBoard();
+                speak('Seleção cancelada.');
+            } else {
+                speak('Nenhuma peça selecionada para cancelar.');
+            }
+            return;
+        }
+
+        const squareStr = command.replace(/[^A-H1-8]/g, '');
+
+        if (!squareStr || squareStr.length !== 2) {
+            speak('Não entendi a casa. Por favor, use letras de A a H e números de 1 a 8.');
+            return;
+        }
+
+        const square = parseSquare(squareStr);
+
+        if (!square) {
+            speak('Casa inválida.');
+            return;
+        }
+
+        const { row, col } = square;
+
+        if (!selectedPiece) {
+            // Nenhuma peça selecionada, então tentamos selecionar uma
+            const isPotentialStart = mandatoryMoves.some(m => m.fromRow === row && m.fromCol === col);
+            if (isPotentialStart) {
+                selectedPiece = { row, col };
+                drawBoard();
+                speak(`Peça em ${squareStr} selecionada. Para onde deseja mover?`);
+            } else {
+                speak(`Não é possível selecionar a peça em ${squareStr}. Verifique se a peça é sua e se ela pode se mover.`);
+            }
+        } else {
+            // Uma peça já está selecionada, então tentamos movê-la
+            const move = mandatoryMoves.find(m =>
+                m.fromRow === selectedPiece.row &&
+                m.fromCol === selectedPiece.col &&
+                m.toRow === row &&
+                m.toCol === col
+            );
+
+            if (move) {
+                movePiece(move, true);
+            } else {
+                // Se o movimento não for válido, talvez o usuário queira selecionar outra peça
+                const isPotentialStart = mandatoryMoves.some(m => m.fromRow === row && m.fromCol === col);
+                if (isPotentialStart) {
+                    selectedPiece = { row, col };
+                    drawBoard();
+                    speak(`Seleção alterada para a peça em ${squareStr}. Para onde deseja mover?`);
+                } else {
+                    speak(`Movimento para ${squareStr} inválido. Para cancelar a seleção, diga "cancelar".`);
+                }
+            }
+        }
+    }
+
+    function parseSquare(squareStr) {
+        if (squareStr.length !== 2) return null;
+
+        const colChar = squareStr.charAt(0);
+        const rowChar = squareStr.charAt(1);
+
+        const col = colChar.charCodeAt(0) - 'A'.charCodeAt(0);
+        const row = 8 - parseInt(rowChar, 10);
+
+        if (col < 0 || col >= BOARD_SIZE || isNaN(row) || row < 0 || row >= BOARD_SIZE) {
+            return null;
+        }
+
+        return { row, col };
+    }
+
+    // Adiciona ouvintes de evento
+    voiceToggleBtn.addEventListener('click', toggleVoiceCommands);
+    window.addEventListener('keydown', (e) => {
+        if (e.code === 'Space') {
+            e.preventDefault(); // Evita o comportamento padrão da barra de espaço (rolar a página)
+            toggleVoiceCommands();
+        }
+    });
 
     // Elementos de áudio (devem existir no seu HTML)
     const moveSound = document.getElementById('move-sound');
@@ -43,7 +223,7 @@ document.addEventListener('DOMContentLoaded', () => {
         currentPlayer = BLACK_PIECE;
         selectedPiece = null;
         drawBoard();
-        updateStatus();
+        updateStatus(false); // Apenas atualiza o texto, não fala
         calculateTurnMoves();
     }
 
@@ -199,46 +379,43 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function handleCanvasClick(event) {
-         
         const rect = canvas.getBoundingClientRect();
         const x = event.clientX - rect.left;
         const y = event.clientY - rect.top;
-    
+
         const col = Math.floor(x / SQUARE_SIZE);
         const row = Math.floor(y / SQUARE_SIZE);
-    
-        // Verifica se o clique foi em uma peça que pode se mover
+
         const isPotentialStart = mandatoryMoves.some(m => m.fromRow === row && m.fromCol === col);
-    
+
         if (selectedPiece) {
-            // Uma peça já está selecionada, então tentamos movê-la
             const move = mandatoryMoves.find(m =>
                 m.fromRow === selectedPiece.row &&
                 m.fromCol === selectedPiece.col &&
                 m.toRow === row &&
                 m.toCol === col
             );
-    
+
             if (move) {
-                // Movimento válido encontrado, executa o movimento
                 movePiece(move);
             } else if (isPotentialStart && (selectedPiece.row !== row || selectedPiece.col !== col)) {
-                // O jogador clicou em outra peça válida, então trocamos a seleção
                 selectedPiece = { row, col };
+                const squareName = getSquareName(row, col);
+                speak(`Casa ${squareName} selecionada.`);
                 drawBoard();
             } else {
-                // Clicou em um local inválido ou na mesma peça, então deseleciona
                 selectedPiece = null;
                 drawBoard();
             }
         } else if (isPotentialStart) {
-            // Nenhuma peça selecionada, e o jogador clicou em uma peça válida
             selectedPiece = { row, col };
+            const squareName = getSquareName(row, col);
+            speak(`Casa ${squareName} selecionada.`);
             drawBoard();
         }
     }
 
-    function movePiece(move) {
+    function movePiece(move, narrate = false) {
         const { fromRow, fromCol, toRow, toCol, isCapture } = move;
         let piece = board[fromRow][fromCol];
 
@@ -277,13 +454,29 @@ document.addEventListener('DOMContentLoaded', () => {
 
         // Se não houver captura em cadeia, finaliza o turno
         selectedPiece = null;
-        switchPlayer(); // switchPlayer agora também chama calculateTurnMoves
-        updateStatus();
+        switchPlayer();
+
+        if (narrate) {
+            const fromSquareStr = getSquareName(fromRow, fromCol);
+            const toSquareStr = getSquareName(toRow, toCol);
+            const nextPlayerName = (currentPlayer === BLACK_PIECE) ? 'Pretas' : 'Brancas';
+            speak(`Movendo de ${fromSquareStr} para ${toSquareStr}. Vez das peças ${nextPlayerName}.`);
+            updateStatus(false); // Apenas atualiza o texto
+        } else {
+            updateStatus(true); // Fala normalmente
+        }
+
         updateScore();
         drawBoard();
     }
 
     // --- FUNÇÕES AUXILIARES ---
+
+    function getSquareName(row, col) {
+        const colChar = String.fromCharCode('A'.charCodeAt(0) + col);
+        const rowNum = 8 - row;
+        return `${colChar}${rowNum}`;
+    }
 
     function isBlack(piece) {
         return piece === BLACK_PIECE || piece === BLACK_KING;
@@ -313,9 +506,13 @@ document.addEventListener('DOMContentLoaded', () => {
         calculateTurnMoves();
     }
 
-    function updateStatus() {
+    function updateStatus(shouldSpeak = true) {
         const playerName = currentPlayer === BLACK_PIECE ? 'Pretas' : 'Brancas';
         statusDisplay.innerHTML = `Vez das peças <span class="highlight-turn">${playerName}</span>`;
+        if (shouldSpeak) {
+            const statusText = `Vez das peças ${playerName}`;
+            speak(statusText);
+        }
     }
 
     function updateScore() {
@@ -356,4 +553,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Inicia o jogo pela primeira vez
     initializeBoard();
+    speak('Bem-vindo ao Jogo de Damas!', () => {
+        const playerName = currentPlayer === BLACK_PIECE ? 'Pretas' : 'Brancas';
+        speak(`Vez das peças ${playerName}`);
+    });
 });

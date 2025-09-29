@@ -3,16 +3,45 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Jogo de Damas</title>
+  <title>Jogo de Damas Acessível</title>
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
-  <h1>Jogo de Damas</h1>
-  <div id="game-container">
-    <canvas id="checkers-board" width="400" height="400"></canvas>
+  <h1>Jogo de Damas Acessível</h1>
+  <p>Use comandos de voz ou clique com o mouse para mover as peças.</p>
+  <p>Para <strong>ativar o comando de voz</strong>, clique no botão ou pressione <strong>Barra de Espaço</strong> no teclado.</p>
+  <p>Com o comando de voz ativado diga o nome da casa que deseja selecionar, por exemplo, F6.</p>
+  <p>Para cancelar a seleção, diga "cancelar".</p>
+  <div id="game-wrapper">
+    <div id="board-container">
+      <div id="row-labels">
+        <span>8</span>
+        <span>7</span>
+        <span>6</span>
+        <span>5</span>
+        <span>4</span>
+        <span>3</span>
+        <span>2</span>
+        <span>1</span>
+      </div>
+      <canvas id="checkers-board" width="400" height="400"></canvas>
+    </div>
+    <div id="col-labels">
+      <span>A</span>
+      <span>B</span>
+      <span>C</span>
+      <span>D</span>
+      <span>E</span>
+      <span>F</span>
+      <span>G</span>
+      <span>H</span>
+    </div>
   </div>
   <div id="status">Vez das peças Pretas</div>
   <div id="score">Pretas: 12 - Brancas: 12</div>
+  <div id="controls">
+    <button id="voice-toggle">Ativar Comandos de Voz</button>
+  </div>
 
   <script src="script.js"></script>
 </body>
