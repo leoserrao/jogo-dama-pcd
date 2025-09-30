@@ -2,6 +2,7 @@
 document.addEventListener('DOMContentLoaded', () => {
     const speechQueue = [];
     let isSpeaking = false;
+    let isNarrationActive = true; // Controla se a narração por voz está ativa
 
     function processSpeechQueue() {
         if (speechQueue.length === 0) {
@@ -33,6 +34,10 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function speak(text, callback) {
+        if (!isNarrationActive) {
+            if (callback) callback(); // Garante que callbacks sejam chamados mesmo com a narração desativada
+            return;
+        }
         speechQueue.push({ text, callback });
         if (!isSpeaking) {
             processSpeechQueue();
@@ -44,6 +49,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const statusDisplay = document.getElementById('status');
     const scoreDisplay = document.getElementById('score');
     const voiceToggleBtn = document.getElementById('voice-toggle');
+    const narrationToggleBtn = document.getElementById('narration-toggle');
 
     // --- LÓGICA DE COMANDO DE VOZ ---
     const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
@@ -53,7 +59,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (SpeechRecognition) {
         recognition = new SpeechRecognition();
         recognition.lang = 'pt-BR';
-        recognition.continuous = false; // Processa um comando por vez
+        recognition.continuous = false;
 
         recognition.onresult = (event) => {
             const command = event.results[event.results.length - 1][0].transcript.trim().toUpperCase();
@@ -63,14 +69,12 @@ document.addEventListener('DOMContentLoaded', () => {
         recognition.onerror = (event) => {
             console.error('Erro no reconhecimento de voz:', event.error);
             if (isVoiceCommandActive) {
-                // Reinicia o reconhecimento se houver um erro e ainda estiver ativo
                 setTimeout(() => recognition.start(), 500);
             }
         };
 
         recognition.onend = () => {
             if (isVoiceCommandActive && !isSpeaking) {
-                // Reinicia o reconhecimento para ouvir o próximo comando
                 setTimeout(() => recognition.start(), 500);
             }
         };
@@ -84,7 +88,7 @@ document.addEventListener('DOMContentLoaded', () => {
         isVoiceCommandActive = !isVoiceCommandActive;
         if (isVoiceCommandActive) {
             voiceToggleBtn.textContent = 'Desativar Comandos de Voz';
-            voiceToggleBtn.style.backgroundColor = '#4CAF50'; // Verde
+            voiceToggleBtn.style.backgroundColor = '#4CAF50';
             recognition.start();
             speak('Comandos de voz ativados');
         } else {
@@ -92,6 +96,19 @@ document.addEventListener('DOMContentLoaded', () => {
             voiceToggleBtn.style.backgroundColor = '';
             recognition.stop();
             speak('Comandos de voz desativados');
+        }
+    }
+
+    function toggleNarration() {
+        isNarrationActive = !isNarrationActive;
+        if (isNarrationActive) {
+            narrationToggleBtn.textContent = 'Desativar Narração (N)';
+            narrationToggleBtn.style.backgroundColor = '#4CAF50';
+            speak('Narração ativada.');
+        } else {
+            narrationToggleBtn.textContent = 'Ativar Narração (N)';
+            narrationToggleBtn.style.backgroundColor = '';
+            // Não podemos usar speak() para anunciar a desativação, pois ela já está desativada.
         }
     }
 
@@ -126,7 +143,6 @@ document.addEventListener('DOMContentLoaded', () => {
         const { row, col } = square;
 
         if (!selectedPiece) {
-            // Nenhuma peça selecionada, então tentamos selecionar uma
             const isPotentialStart = mandatoryMoves.some(m => m.fromRow === row && m.fromCol === col);
             if (isPotentialStart) {
                 selectedPiece = { row, col };
@@ -136,18 +152,11 @@ document.addEventListener('DOMContentLoaded', () => {
                 speak(`Não é possível selecionar a peça em ${squareStr}. Verifique se a peça é sua e se ela pode se mover.`);
             }
         } else {
-            // Uma peça já está selecionada, então tentamos movê-la
-            const move = mandatoryMoves.find(m =>
-                m.fromRow === selectedPiece.row &&
-                m.fromCol === selectedPiece.col &&
-                m.toRow === row &&
-                m.toCol === col
-            );
+            const move = mandatoryMoves.find(m => m.fromRow === selectedPiece.row && m.fromCol === selectedPiece.col && m.toRow === row && m.toCol === col);
 
             if (move) {
                 movePiece(move, true);
             } else {
-                // Se o movimento não for válido, talvez o usuário queira selecionar outra peça
                 const isPotentialStart = mandatoryMoves.some(m => m.fromRow === row && m.fromCol === col);
                 if (isPotentialStart) {
                     selectedPiece = { row, col };
@@ -178,36 +187,30 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Adiciona ouvintes de evento
     voiceToggleBtn.addEventListener('click', toggleVoiceCommands);
+    narrationToggleBtn.addEventListener('click', toggleNarration);
     window.addEventListener('keydown', (e) => {
         if (e.code === 'Space') {
-            e.preventDefault(); // Evita o comportamento padrão da barra de espaço (rolar a página)
+            e.preventDefault();
             toggleVoiceCommands();
+        }
+        if (e.key.toUpperCase() === 'N') {
+            e.preventDefault();
+            toggleNarration();
         }
     });
 
-    // Elementos de áudio (devem existir no seu HTML)
+    // Elementos de áudio
     const moveSound = document.getElementById('move-sound');
     const captureSound = document.getElementById('capture-sound');
 
     const BOARD_SIZE = 8;
     const SQUARE_SIZE = canvas.width / BOARD_SIZE;
 
-    // Constantes para representar as peças e casas vazias
-    const EMPTY = 0;
-    const BLACK_PIECE = 1;
-    const WHITE_PIECE = 2;
-    const BLACK_KING = 3;
-    const WHITE_KING = 4;
-
-    // Representação do tabuleiro como uma matriz 8x8
+    const EMPTY = 0, BLACK_PIECE = 1, WHITE_PIECE = 2, BLACK_KING = 3, WHITE_KING = 4;
     let board = [];
-
-    // Variáveis para controlar o estado do jogo
     let currentPlayer = BLACK_PIECE;
-    let selectedPiece = null; // Guarda a peça selecionada { row, col }
-    let mandatoryMoves = []; // Guarda os movimentos obrigatórios (capturas)
-
-    // --- INICIALIZAÇÃO DO JOGO ---
+    let selectedPiece = null;
+    let mandatoryMoves = [];
 
     function initializeBoard() {
         board = [
@@ -223,22 +226,26 @@ document.addEventListener('DOMContentLoaded', () => {
         currentPlayer = BLACK_PIECE;
         selectedPiece = null;
         drawBoard();
-        updateStatus(false); // Apenas atualiza o texto, não fala
+        updateStatus(false);
         calculateTurnMoves();
+        // Garante que o estado inicial do botão de narração esteja correto
+        if (isNarrationActive) {
+            narrationToggleBtn.textContent = 'Desativar Narração (N)';
+            narrationToggleBtn.style.backgroundColor = '#4CAF50';
+        } else {
+            narrationToggleBtn.textContent = 'Ativar Narração (N)';
+            narrationToggleBtn.style.backgroundColor = '';
+        }
     }
-
-    // --- FUNÇÕES DE DESENHO ---
 
     function drawBoard() {
         for (let row = 0; row < BOARD_SIZE; row++) {
             for (let col = 0; col < BOARD_SIZE; col++) {
-                // Desenha a casa do tabuleiro
                 const x = col * SQUARE_SIZE;
                 const y = row * SQUARE_SIZE;
                 ctx.fillStyle = (row + col) % 2 === 0 ? '#f0d9b5' : '#b58863';
                 ctx.fillRect(x, y, SQUARE_SIZE, SQUARE_SIZE);
 
-                // Desenha a peça, se houver uma na casa
                 const piece = board[row][col];
                 if (piece !== EMPTY) {
                     drawPiece(x + SQUARE_SIZE / 2, y + SQUARE_SIZE / 2, piece);
@@ -246,17 +253,14 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         }
 
-        // Destaca a peça selecionada e os movimentos possíveis
         if (selectedPiece) {
             const { row, col } = selectedPiece;
-            // Destaca a peça
-            ctx.strokeStyle = '#00ff00'; // Cor verde para destacar
+            ctx.strokeStyle = '#00ff00';
             ctx.lineWidth = 3;
             ctx.strokeRect(col * SQUARE_SIZE, row * SQUARE_SIZE, SQUARE_SIZE, SQUARE_SIZE);
 
-            // Destaca os movimentos possíveis para a peça selecionada
             const possibleMoves = mandatoryMoves.filter(m => m.fromRow === row && m.fromCol === col);
-            ctx.fillStyle = 'rgba(10, 132, 255, 0.5)'; // Azul semi-transparente
+            ctx.fillStyle = 'rgba(10, 132, 255, 0.5)';
 
             for (const move of possibleMoves) {
                 const { toRow, toCol } = move;
@@ -279,50 +283,40 @@ document.addEventListener('DOMContentLoaded', () => {
         ctx.stroke();
         ctx.closePath();
 
-    // Desenha uma 'coroa' para as damas
-    if (pieceType === BLACK_KING || pieceType === WHITE_KING) {
-        ctx.beginPath();
-        ctx.arc(x, y, SQUARE_SIZE / 2 - 18, 0, 2 * Math.PI);
-        ctx.fillStyle = '#ffd700'; // Cor de ouro
-        ctx.fill();
-        ctx.closePath();
+        if (pieceType === BLACK_KING || pieceType === WHITE_KING) {
+            ctx.beginPath();
+            ctx.arc(x, y, SQUARE_SIZE / 2 - 18, 0, 2 * Math.PI);
+            ctx.fillStyle = '#ffd700';
+            ctx.fill();
+            ctx.closePath();
+        }
     }
-    }
-
-    // --- LÓGICA DE MOVIMENTO ---
 
     function getPossibleMovesForPiece(row, col) {
         const piece = board[row][col];
-        if (piece === EMPTY) {
-            return { captures: [], simples: [] };
-        }
+        if (piece === EMPTY) return { captures: [], simples: [] };
 
         const captures = [];
         const simples = [];
-        const isKing = piece === BLACK_KING || piece === WHITE_KING; // A Dama pode se mover em qualquer direção
+        const isKing = piece === BLACK_KING || piece === WHITE_KING;
         const forwardDir = isBlack(piece) ? 1 : -1;
 
-        // Verifica movimentos simples
         if (isKing) {
-            // A Dama (King) pode se mover várias casas em qualquer direção diagonal ("Dama voadora")
             const moveDirections = [[1, 1], [1, -1], [-1, 1], [-1, -1]];
             for (const [dRow, dCol] of moveDirections) {
                 let nextRow = row + dRow;
                 let nextCol = col + dCol;
-                // Continua na mesma direção até encontrar uma peça ou sair do tabuleiro
                 while (isOnBoard(nextRow, nextCol)) {
                     if (board[nextRow][nextCol] === EMPTY) {
                         simples.push({ fromRow: row, fromCol: col, toRow: nextRow, toCol: nextCol, isCapture: false });
                         nextRow += dRow;
                         nextCol += dCol;
                     } else {
-                        // Caminho bloqueado, para de verificar nesta direção
                         break;
                     }
                 }
             }
         } else {
-            // Peças comuns se movem apenas uma casa para frente
             const moveDirections = [[forwardDir, 1], [forwardDir, -1]];
             for (const [dRow, dCol] of moveDirections) {
                 const toRow = row + dRow;
@@ -333,7 +327,6 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         }
 
-        // Verifica capturas (peças normais também podem capturar para trás)
         const captureDirections = [[1, 1], [1, -1], [-1, 1], [-1, -1]];
         for (const [dRow, dCol] of captureDirections) {
             const opponentRow = row + dRow;
@@ -358,8 +351,7 @@ document.addEventListener('DOMContentLoaded', () => {
         for (let r = 0; r < BOARD_SIZE; r++) {
             for (let c = 0; c < BOARD_SIZE; c++) {
                 const piece = board[r][c];
-                const isCurrentPlayerPiece = (currentPlayer === BLACK_PIECE && isBlack(piece)) ||
-                                             (currentPlayer === WHITE_PIECE && isWhite(piece));
+                const isCurrentPlayerPiece = (currentPlayer === BLACK_PIECE && isBlack(piece)) || (currentPlayer === WHITE_PIECE && isWhite(piece));
 
                 if (isCurrentPlayerPiece) {
                     const moves = getPossibleMovesForPiece(r, c);
@@ -369,7 +361,6 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         }
 
-        // Regra da captura obrigatória: se houver capturas, elas são os únicos movimentos permitidos.
         mandatoryMoves = allCaptures.length > 0 ? allCaptures : allSimples;
 
         if (mandatoryMoves.length === 0) {
@@ -389,19 +380,14 @@ document.addEventListener('DOMContentLoaded', () => {
         const isPotentialStart = mandatoryMoves.some(m => m.fromRow === row && m.fromCol === col);
 
         if (selectedPiece) {
-            const move = mandatoryMoves.find(m =>
-                m.fromRow === selectedPiece.row &&
-                m.fromCol === selectedPiece.col &&
-                m.toRow === row &&
-                m.toCol === col
-            );
+            const move = mandatoryMoves.find(m => m.fromRow === selectedPiece.row && m.fromCol === selectedPiece.col && m.toRow === row && m.toCol === col);
 
             if (move) {
-                movePiece(move);
+                movePiece(move, true);
             } else if (isPotentialStart && (selectedPiece.row !== row || selectedPiece.col !== col)) {
                 selectedPiece = { row, col };
                 const squareName = getSquareName(row, col);
-                speak(`Casa ${squareName} selecionada.`);
+                speak(`Casa ${squareName} selecionada. Para onde deseja mover?`);
                 drawBoard();
             } else {
                 selectedPiece = null;
@@ -410,7 +396,7 @@ document.addEventListener('DOMContentLoaded', () => {
         } else if (isPotentialStart) {
             selectedPiece = { row, col };
             const squareName = getSquareName(row, col);
-            speak(`Casa ${squareName} selecionada.`);
+            speak(`Casa ${squareName} selecionada. Para onde deseja mover?`);
             drawBoard();
         }
     }
@@ -419,11 +405,9 @@ document.addEventListener('DOMContentLoaded', () => {
         const { fromRow, fromCol, toRow, toCol, isCapture } = move;
         let piece = board[fromRow][fromCol];
 
-        // Move a peça para o novo local
         board[toRow][toCol] = piece;
         board[fromRow][fromCol] = EMPTY;
 
-        // Remove a peça capturada, se for o caso
         if (isCapture) {
             const capturedRow = fromRow + (toRow - fromRow) / 2;
             const capturedCol = fromCol + (toCol - fromCol) / 2;
@@ -433,26 +417,23 @@ document.addEventListener('DOMContentLoaded', () => {
             playSound(moveSound);
         }
 
-        // Lógica de promoção para Dama (King)
         if (piece === BLACK_PIECE && toRow === BOARD_SIZE - 1) {
             board[toRow][toCol] = BLACK_KING;
         } else if (piece === WHITE_PIECE && toRow === 0) {
             board[toRow][toCol] = WHITE_KING;
         }
 
-        // Lógica de captura em cadeia
         if (isCapture) {
             const chainCaptures = getPossibleMovesForPiece(toRow, toCol).captures;
             if (chainCaptures.length > 0) {
-                selectedPiece = { row: toRow, col: toCol }; // Mantém a peça selecionada
-                mandatoryMoves = chainCaptures; // Atualiza os movimentos obrigatórios
+                selectedPiece = { row: toRow, col: toCol };
+                mandatoryMoves = chainCaptures;
                 drawBoard();
-                updateScore(); // Atualiza o placar imediatamente
-                return; // Não troca de jogador, força a próxima captura
+                updateScore();
+                return;
             }
         }
 
-        // Se não houver captura em cadeia, finaliza o turno
         selectedPiece = null;
         switchPlayer();
 
@@ -461,16 +442,14 @@ document.addEventListener('DOMContentLoaded', () => {
             const toSquareStr = getSquareName(toRow, toCol);
             const nextPlayerName = (currentPlayer === BLACK_PIECE) ? 'Pretas' : 'Brancas';
             speak(`Movendo de ${fromSquareStr} para ${toSquareStr}. Vez das peças ${nextPlayerName}.`);
-            updateStatus(false); // Apenas atualiza o texto
+            updateStatus(false);
         } else {
-            updateStatus(true); // Fala normalmente
+            updateStatus(true);
         }
 
         updateScore();
         drawBoard();
     }
-
-    // --- FUNÇÕES AUXILIARES ---
 
     function getSquareName(row, col) {
         const colChar = String.fromCharCode('A'.charCodeAt(0) + col);
@@ -536,22 +515,19 @@ document.addEventListener('DOMContentLoaded', () => {
             scoreDisplay.innerHTML = `<span>${blackText}</span> - <span class="highlight-turn">${whiteText}</span>`;
         }
 
-        // Verifica condição de vitória
         if (whiteCount === 0) {
             statusDisplay.textContent = 'As Pretas Venceram!';
-            canvas.removeEventListener('click', handleCanvasClick); // Desativa o jogo
+            canvas.removeEventListener('click', handleCanvasClick);
         } else if (blackCount === 0) {
             statusDisplay.textContent = 'As Brancas Venceram!';
-            canvas.removeEventListener('click', handleCanvasClick); // Desativa o jogo
+            canvas.removeEventListener('click', handleCanvasClick);
         }
     }
 
     // --- INÍCIO DO JOGO ---
 
-    // Adiciona o "ouvinte" de cliques no canvas
     canvas.addEventListener('click', handleCanvasClick);
 
-    // Inicia o jogo pela primeira vez
     initializeBoard();
     speak('Bem-vindo ao Jogo de Damas!', () => {
         const playerName = currentPlayer === BLACK_PIECE ? 'Pretas' : 'Brancas';
