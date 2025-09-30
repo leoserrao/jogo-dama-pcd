@@ -112,19 +112,49 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
+    const rulesText = `
+Regras do Jogo:
+No jogo de damas com 64 casas, o objetivo é capturar ou imobilizar as peças do adversário, usando 12 peças para cada jogador, que se movem diagonalmente pelas casas escuras do tabuleiro. O jogador deve capturar obrigatoriamente peças, escolhendo o lance que capture o maior número de peças se houver mais de uma opção, e ao chegar na oitava linha, a peça é promovida a "dama", que pode se mover para frente e para trás sem restrições de casas. O jogo termina quando um jogador captura todas as peças do adversário, ou elas ficam imobilizadas, ou há um empate.
+
+Regras Detalhadas:
+1. Posicionamento do Tabuleiro:
+O tabuleiro possui 64 casas organizadas em uma grade com oito colunas nomeadas com letras de A à H da esquerda para direita e oito linhas numeradas de 1 à 8 de baixo para cima no tabuleiro. 
+A casa escura do canto do tabuleiro deve ficar sempre à esquerda de cada jogador.
+
+2. Montagem das Peças:
+São colocadas 12 peças de cada cor nas 12 casas escuras das três primeiras fileiras de cada jogador.
+As pedras brancas ficam nas três primeiras fileiras (parte de baixo do tabuleiro) e as pretas nas três últimas (parte de cima do tabuleiro).
+
+3. Movimentação das Peças:
+
+As peças comuns se movem uma casa por vez, na diagonal e para frente. 
+A peça que atinge a oitava linha do tabuleiro do adversário é promovida a "dama". 
+A dama pode se mover quantas casas quiser na diagonal, para frente e para trás.
+
+4. Captura de Peças:
+A captura é feita ao saltar sobre a peça do adversário, que deve estar na casa seguinte, na diagonal. 
+A captura é obrigatória. 
+Se houver mais de uma opção de captura, o jogador deve escolher o lance que capture o maior número de peças (Lei da Maioria). 
+A captura pode ser feita para frente e para trás, e o jogador deve continuar capturando em sequência (captura em cadeia), se houverem outras peças para capturar, mas sem parar no meio de uma captura múltipla.
+
+5. Condições de Vitória:
+Você vence se capturar todas as peças do seu oponente ou as deixar sem nenhuma possibilidade de movimento.
+
+6. Empate:
+O jogo termina em empate se os jogadores concordarem com o empate. 
+Após 20 lances sucessivos de damas, sem que nenhuma peça seja movida ou capturada, a partida é declarada empatada. 
+Quando a mesma posição se repete no tabuleiro pela terceira vez, a partida é considerada empatada.
+
+7. Diferenças com outras damas: 
+O jogo de damas com 64 casas não tem a regra do "sopro", que é a remoção de uma peça tocada pelo jogador.
+`;
+
     function readRules() {
-        const rulesContainer = document.getElementById('rules');
         speechSynthesis.cancel(); // Para a fala atual
         speechQueue.length = 0; // Limpa a fila de falas
         isSpeaking = false;
 
-        const elementsToRead = rulesContainer.querySelectorAll('h2, p');
-        let textToSpeak = '';
-        elementsToRead.forEach(el => {
-            textToSpeak += el.textContent + ' ';
-        });
-
-        speak(textToSpeak.trim());
+        speak(rulesText);
     }
 
     function handleVoiceCommand(command) {
@@ -548,7 +578,7 @@ document.addEventListener('DOMContentLoaded', () => {
     canvas.addEventListener('click', handleCanvasClick);
 
     initializeBoard();
-    speak('Bem-vindo ao Jogo de Damas Acessível! Como jogar. Use comandos de voz ou clique com o mouse para mover as peças. Para ativar o comando de voz, clique no botão Ativar comandos de voz ou pressione Barra de Espaço no teclado. Com o comando de voz ativado diga o nome da casa que deseja selecionar, por exemplo, F6. Para cancelar a seleção, diga cancelar. Hora de jogar!', () => {
+    speak('Bem-vindo ao Jogo de Damas Acessível! Como jogar. Use comandos de voz ou clique com o mouse para mover as peças. Para ativar o comando de voz, clique no botão Ativar comandos de voz ou pressione Barra de Espaço no teclado. Com o comando de voz ativado diga o nome da casa que deseja selecionar, por exemplo, F6. Para cancelar a seleção, diga cancelar. Para ouvir as regras do jogo, clique no botão Ouvir as regras ou pressione R no teclado. Hora de jogar!', () => {
         const playerName = currentPlayer === BLACK_PIECE ? 'Pretas' : 'Brancas';
         speak(`Vez das peças ${playerName}`);
     });
