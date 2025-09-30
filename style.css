@@ -72,8 +72,36 @@ canvas {
     margin-top: 20px;
 }
 
-#voice-toggle, #narration-toggle {
+#voice-toggle, #narration-toggle, #read-rules-btn {
     padding: 10px 20px;
     font-size: 16px;
     cursor: pointer;
+}
+
+#rules {
+    background-color: #fff;
+    border: 1px solid #ccc;
+    border-radius: 8px;
+    padding: 15px;
+    margin-top: 20px;
+    max-width: 500px;
+    text-align: center;
+}
+
+#rules h2 {
+    margin-top: 0;
+    text-align: center;
+    font-size: 20px;
+    color: #333;
+}
+
+#rules p {
+    font-size: 14px;
+    line-height: 1.5;
+    margin-bottom: 10px;
+    text-align: left;
+}
+
+#read-rules-btn {
+    margin-top: 10px;
 }

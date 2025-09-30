@@ -8,10 +8,14 @@
 </head>
 <body>
   <h1>Jogo de Damas Acessível</h1>
-  <p>Use comandos de voz ou clique com o mouse para mover as peças.</p>
-  <p>Para <strong>ativar o comando de voz</strong>, clique no botão ou pressione <strong>Barra de Espaço</strong> no teclado.</p>
-  <p>Com o comando de voz ativado diga o nome da casa que deseja selecionar, por exemplo, F6.</p>
-  <p>Para cancelar a seleção, diga "cancelar".</p>
+  <div id="rules">
+    <h2>Como Jogar</h2>
+    <p>Use comandos de voz ou clique com o mouse para mover as peças.</p>
+    <p>Para <strong>ativar o comando de voz</strong>, clique no botão ou pressione <strong>Barra de Espaço</strong> no teclado.</p>
+    <p>Com o comando de voz ativado diga o nome da casa que deseja selecionar, por exemplo, F6.</p>
+    <p>Para cancelar a seleção, diga "cancelar".</p>
+    <button id="read-rules-btn">Ouvir as Regras (R)</button>
+  </div>
   <div id="game-wrapper">
     <div id="board-container">
       <div id="row-labels">
@@ -42,6 +46,38 @@
   <div id="controls">
     <button id="voice-toggle">Ativar Comandos de Voz</button>
     <button id="narration-toggle">Desativar Narração (N)</button>
+  </div>
+
+  <div id="rules">
+    <h2>Regras do Jogo de Damas com 64 Casas</h2>
+    <p>No jogo de damas com 64 casas, o objetivo é capturar ou imobilizar as peças do adversário, usando 12 peças para cada jogador, que se movem diagonalmente pelas casas escuras do tabuleiro.</p>
+    <p>O jogador deve capturar obrigatoriamente peças, escolhendo o lance que capture o maior número de peças se houver mais de uma opção, e ao chegar na oitava linha, a peça é promovida a "dama", que pode se mover para frente e para trás sem restrições de casas.</p>
+    <p>O jogo termina quando um jogador captura todas as peças do adversário, ou elas ficam imobilizadas, ou há um empate.</p>
+    <h3>Regras Detalhadas:</h3>
+    <h4>1. Posicionamento do Tabuleiro:</h4>
+    <p>O tabuleiro é de 64 casas.</p>
+    <p>A casa escura do canto do tabuleiro deve ficar sempre à esquerda de cada jogador.</p>
+    <h4>2. Montagem das Peças:</h4>
+    <p>São colocadas 12 peças de cada cor nas 12 casas escuras das três primeiras fileiras de cada jogador.</p>
+    <p>As pedras brancas ficam nas três primeiras fileiras e as pretas nas três últimas.</p>
+    <h4>3. Movimentação das Peças:</h4>
+    <p>As peças comuns se movem uma casa por vez, na diagonal e para frente.</p>
+    <p>A peça que atinge a oitava linha do tabuleiro do adversário é promovida a "dama".</p>
+    <p>A dama pode se mover quantas casas quiser na diagonal, para frente e para trás.</p>
+    <h4>4. Captura de Peças:</h4>
+    <p>A captura é feita ao saltar sobre a peça do adversário, que deve estar na casa seguinte, na diagonal.</p>
+    <p>A captura é obrigatória.</p>
+    <p>Se houver mais de uma opção de captura, o jogador deve escolher o lance que capture o maior número de peças (Lei da Maioria).</p>
+    <p>A captura pode ser feita para frente e para trás, e o jogador deve continuar capturando em sequência (captura em cadeia), se houverem outras peças para capturar, mas sem parar no meio de uma captura múltipla.</p>
+    <h4>5. Condições de Vitória:</h4>
+    <p>Você vence se capturar todas as peças do seu oponente ou as deixar sem nenhuma possibilidade de movimento.</p>
+    <h4>6. Empate:</h4>
+    <p>O jogo termina em empate se os jogadores concordarem com o empate.</p>
+    <p>Se ambos os jogadores ficarem com apenas uma dama, o jogo é declarado empatado.</p>
+    <p>Após 20 lances sucessivos de damas, sem que nenhuma peça seja movida ou capturada, a partida é declarada empatada.</p>
+    <p>Quando a mesma posição se repete no tabuleiro pela terceira vez, a partida é considerada empatada.</p>
+    <h4>7. Diferenças com outras damas:</h4>
+    <p>O jogo de damas com 64 casas não tem a regra do "sopro", que é a remoção de uma peça tocada.</p>
   </div>
 
   <script src="script.js"></script>

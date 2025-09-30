@@ -50,6 +50,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const scoreDisplay = document.getElementById('score');
     const voiceToggleBtn = document.getElementById('voice-toggle');
     const narrationToggleBtn = document.getElementById('narration-toggle');
+    const readRulesBtn = document.getElementById('read-rules-btn');
 
     // --- LÓGICA DE COMANDO DE VOZ ---
     const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
@@ -108,8 +109,22 @@ document.addEventListener('DOMContentLoaded', () => {
         } else {
             narrationToggleBtn.textContent = 'Ativar Narração (N)';
             narrationToggleBtn.style.backgroundColor = '';
-            // Não podemos usar speak() para anunciar a desativação, pois ela já está desativada.
         }
+    }
+
+    function readRules() {
+        const rulesContainer = document.getElementById('rules');
+        speechSynthesis.cancel(); // Para a fala atual
+        speechQueue.length = 0; // Limpa a fila de falas
+        isSpeaking = false;
+
+        const elementsToRead = rulesContainer.querySelectorAll('h2, p');
+        let textToSpeak = '';
+        elementsToRead.forEach(el => {
+            textToSpeak += el.textContent + ' ';
+        });
+
+        speak(textToSpeak.trim());
     }
 
     function handleVoiceCommand(command) {
@@ -188,6 +203,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // Adiciona ouvintes de evento
     voiceToggleBtn.addEventListener('click', toggleVoiceCommands);
     narrationToggleBtn.addEventListener('click', toggleNarration);
+    readRulesBtn.addEventListener('click', readRules);
     window.addEventListener('keydown', (e) => {
         if (e.code === 'Space') {
             e.preventDefault();
@@ -196,6 +212,10 @@ document.addEventListener('DOMContentLoaded', () => {
         if (e.key.toUpperCase() === 'N') {
             e.preventDefault();
             toggleNarration();
+        }
+        if (e.key.toUpperCase() === 'R') {
+            e.preventDefault();
+            readRules();
         }
     });
 
@@ -228,7 +248,6 @@ document.addEventListener('DOMContentLoaded', () => {
         drawBoard();
         updateStatus(false);
         calculateTurnMoves();
-        // Garante que o estado inicial do botão de narração esteja correto
         if (isNarrationActive) {
             narrationToggleBtn.textContent = 'Desativar Narração (N)';
             narrationToggleBtn.style.backgroundColor = '#4CAF50';
@@ -529,7 +548,7 @@ document.addEventListener('DOMContentLoaded', () => {
     canvas.addEventListener('click', handleCanvasClick);
 
     initializeBoard();
-    speak('Bem-vindo ao Jogo de Damas!', () => {
+    speak('Bem-vindo ao Jogo de Damas Acessível! Como jogar. Use comandos de voz ou clique com o mouse para mover as peças. Para ativar o comando de voz, clique no botão Ativar comandos de voz ou pressione Barra de Espaço no teclado. Com o comando de voz ativado diga o nome da casa que deseja selecionar, por exemplo, F6. Para cancelar a seleção, diga cancelar. Hora de jogar!', () => {
         const playerName = currentPlayer === BLACK_PIECE ? 'Pretas' : 'Brancas';
         speak(`Vez das peças ${playerName}`);
     });
