@@ -592,7 +592,7 @@ O jogo de damas com 64 casas não tem a regra do "sopro", que é a remoção de 
     canvas.addEventListener('click', handleCanvasClick);
 
     initializeBoard();
-    speak('Bem-vindo ao Jogo de Damas Acessível! Como jogar. Use comandos de voz ou clique com o mouse para mover as peças. Para ativar o comando de voz, clique no botão Ativar comandos de voz ou pressione Barra de Espaço no teclado. Com o comando de voz ativado diga o nome da casa que deseja selecionar, por exemplo, F6. Para cancelar a seleção, diga cancelar. Para ativar ou desativar a narração, clique no botão Ativar / Desativar Narração ou pressione N no teclado. Para ouvir as regras do jogo, clique no botão Ouvir as regras ou pressione R no teclado. Hora de jogar!', () => {
+    speak('Bem-vindo ao Jogo de Damas Acessível! Como jogar. Use comandos de voz ou clique com o mouse para mover as peças. Para ativar o comando de voz, clique no botão Ativar comandos de voz ou pressione Barra de Espaço no teclado. Com o comando de voz ativado diga o nome da casa que deseja selecionar, por exemplo, F6. Para cancelar a seleção, diga cancelar. Para ativar ou desativar o Alto contraste, clique no botão Alto Contraste ou pressione A no teclado. Para ativar ou desativar a narração, clique no botão Ativar / Desativar Narração ou pressione N no teclado. Para ouvir as regras do jogo, clique no botão Ouvir as regras ou pressione R no teclado. Hora de jogar!', () => {
         const playerName = currentPlayer === BLACK_PIECE ? 'Pretas' : 'Brancas';
         speak(`Vez das peças ${playerName}`);
     });
