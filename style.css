@@ -72,7 +72,7 @@ canvas {
     margin-top: 20px;
 }
 
-#voice-toggle, #narration-toggle, #read-rules-btn {
+#voice-toggle, #narration-toggle, #read-rules-btn, #contrast-toggle {
     padding: 10px 20px;
     font-size: 16px;
     cursor: pointer;
@@ -104,4 +104,39 @@ canvas {
 
 #read-rules-btn {
     margin-top: 10px;
+}
+
+/* High Contrast Styles */
+body.high-contrast {
+    background-color: #000;
+    color: #fff;
+}
+
+body.high-contrast #status,
+body.high-contrast #score,
+body.high-contrast #rules h2,
+body.high-contrast #rules p {
+    color: #fff;
+}
+
+body.high-contrast #rules {
+    background-color: #333;
+    border-color: #fff;
+}
+
+body.high-contrast button {
+    background-color: #444;
+    color: #fff;
+    border: 1px solid #fff;
+}
+
+body.high-contrast button:hover {
+    background-color: #666;
+}
+
+body.high-contrast #voice-toggle.active,
+body.high-contrast #narration-toggle.active,
+body.high-contrast #contrast-toggle.active {
+    background-color: #007bff;
+    color: #fff;
 }

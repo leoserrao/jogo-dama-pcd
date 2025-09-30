@@ -51,6 +51,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const voiceToggleBtn = document.getElementById('voice-toggle');
     const narrationToggleBtn = document.getElementById('narration-toggle');
     const readRulesBtn = document.getElementById('read-rules-btn');
+    const contrastToggleBtn = document.getElementById('contrast-toggle');
 
     // --- LÓGICA DE COMANDO DE VOZ ---
     const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
@@ -110,6 +111,14 @@ document.addEventListener('DOMContentLoaded', () => {
             narrationToggleBtn.textContent = 'Ativar Narração (N)';
             narrationToggleBtn.style.backgroundColor = '';
         }
+    }
+
+    function toggleContrast() {
+        document.body.classList.toggle('high-contrast');
+        const isHighContrast = document.body.classList.contains('high-contrast');
+        contrastToggleBtn.textContent = isHighContrast ? 'Desativar Alto Contraste (A)' : 'Ativar Alto Contraste (A)';
+        contrastToggleBtn.classList.toggle('active', isHighContrast);
+        speak(isHighContrast ? 'Alto contraste ativado.' : 'Alto contraste desativado.');
     }
 
     const rulesText = `
@@ -234,6 +243,7 @@ O jogo de damas com 64 casas não tem a regra do "sopro", que é a remoção de 
     voiceToggleBtn.addEventListener('click', toggleVoiceCommands);
     narrationToggleBtn.addEventListener('click', toggleNarration);
     readRulesBtn.addEventListener('click', readRules);
+    contrastToggleBtn.addEventListener('click', toggleContrast);
     window.addEventListener('keydown', (e) => {
         if (e.code === 'Space') {
             e.preventDefault();
@@ -246,6 +256,10 @@ O jogo de damas com 64 casas não tem a regra do "sopro", que é a remoção de 
         if (e.key.toUpperCase() === 'R') {
             e.preventDefault();
             readRules();
+        }
+        if (e.key.toUpperCase() === 'A') {
+            e.preventDefault();
+            toggleContrast();
         }
     });
 
@@ -578,7 +592,7 @@ O jogo de damas com 64 casas não tem a regra do "sopro", que é a remoção de 
     canvas.addEventListener('click', handleCanvasClick);
 
     initializeBoard();
-    speak('Bem-vindo ao Jogo de Damas Acessível! Como jogar. Use comandos de voz ou clique com o mouse para mover as peças. Para ativar o comando de voz, clique no botão Ativar comandos de voz ou pressione Barra de Espaço no teclado. Com o comando de voz ativado diga o nome da casa que deseja selecionar, por exemplo, F6. Para cancelar a seleção, diga cancelar. Para ouvir as regras do jogo, clique no botão Ouvir as regras ou pressione R no teclado. Hora de jogar!', () => {
+    speak('Bem-vindo ao Jogo de Damas Acessível! Como jogar. Use comandos de voz ou clique com o mouse para mover as peças. Para ativar o comando de voz, clique no botão Ativar comandos de voz ou pressione Barra de Espaço no teclado. Com o comando de voz ativado diga o nome da casa que deseja selecionar, por exemplo, F6. Para cancelar a seleção, diga cancelar. Para ativar ou desativar a narração, clique no botão Ativar / Desativar Narração ou pressione N no teclado. Para ouvir as regras do jogo, clique no botão Ouvir as regras ou pressione R no teclado. Hora de jogar!', () => {
         const playerName = currentPlayer === BLACK_PIECE ? 'Pretas' : 'Brancas';
         speak(`Vez das peças ${playerName}`);
     });
