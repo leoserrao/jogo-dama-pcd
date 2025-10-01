@@ -3,6 +3,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const speechQueue = [];
     let isSpeaking = false;
     let isNarrationActive = true; // Controla se a narração por voz está ativa
+    let isGameOver = false;
 
     function processSpeechQueue() {
         if (speechQueue.length === 0) {
@@ -52,6 +53,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const narrationToggleBtn = document.getElementById('narration-toggle');
     const readRulesBtn = document.getElementById('read-rules-btn');
     const contrastToggleBtn = document.getElementById('contrast-toggle');
+    const newGameBtn = document.getElementById('new-game-btn');
 
     // --- LÓGICA DE COMANDO DE VOZ ---
     const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
@@ -244,6 +246,8 @@ O jogo de damas com 64 casas não tem a regra do "sopro", que é a remoção de 
     narrationToggleBtn.addEventListener('click', toggleNarration);
     readRulesBtn.addEventListener('click', readRules);
     contrastToggleBtn.addEventListener('click', toggleContrast);
+    newGameBtn.addEventListener('click', initializeBoard);
+
     window.addEventListener('keydown', (e) => {
         if (e.code === 'Space') {
             e.preventDefault();
@@ -277,6 +281,7 @@ O jogo de damas com 64 casas não tem a regra do "sopro", que é a remoção de 
     let mandatoryMoves = [];
 
     function initializeBoard() {
+        isGameOver = false;
         board = [
             [0, 1, 0, 1, 0, 1, 0, 1],
             [1, 0, 1, 0, 1, 0, 1, 0],
@@ -289,6 +294,11 @@ O jogo de damas com 64 casas não tem a regra do "sopro", que é a remoção de 
         ];
         currentPlayer = BLACK_PIECE;
         selectedPiece = null;
+
+        newGameBtn.style.display = 'none';
+        window.removeEventListener('keydown', handleNewGameKey);
+        canvas.addEventListener('click', handleCanvasClick);
+
         drawBoard();
         updateStatus(false);
         calculateTurnMoves();
@@ -355,11 +365,116 @@ O jogo de damas com 64 casas não tem a regra do "sopro", que é a remoção de 
         }
     }
 
-    function getPossibleMovesForPiece(row, col) {
-        const piece = board[row][col];
-        if (piece === EMPTY) return { captures: [], simples: [] };
+    function getPossibleCapturesForPiece(row, col, currentBoard) {
+        const piece = currentBoard[row][col];
+        if (piece === EMPTY) return [];
 
         const captures = [];
+        const isKing = piece === BLACK_KING || piece === WHITE_KING;
+
+        if (isKing) {
+            const moveDirections = [[1, 1], [1, -1], [-1, 1], [-1, -1]];
+            for (const [dRow, dCol] of moveDirections) {
+                let opponentFound = null;
+                let nextRow = row + dRow;
+                let nextCol = col + dCol;
+
+                while (isOnBoard(nextRow, nextCol)) {
+                    const currentPiece = currentBoard[nextRow][nextCol];
+
+                    if (currentPiece === EMPTY) {
+                        if (opponentFound) {
+                            captures.push({
+                                fromRow: row,
+                                fromCol: col,
+                                toRow: nextRow,
+                                toCol: nextCol,
+                                isCapture: true,
+                                capturedRow: opponentFound.row,
+                                capturedCol: opponentFound.col
+                            });
+                        }
+                    } else if (isOpponent(currentPiece, piece)) {
+                        if (opponentFound) {
+                            break;
+                        }
+                        opponentFound = { row: nextRow, col: nextCol };
+                    } else {
+                        break;
+                    }
+
+                    nextRow += dRow;
+                    nextCol += dCol;
+                }
+            }
+        } else {
+            const captureDirections = [[1, 1], [1, -1], [-1, 1], [-1, -1]];
+            for (const [dRow, dCol] of captureDirections) {
+                const opponentRow = row + dRow;
+                const opponentCol = col + dCol;
+                const toRow = row + 2 * dRow;
+                const toCol = col + 2 * dCol;
+
+                if (isOnBoard(toRow, toCol) && currentBoard[toRow][toCol] === EMPTY) {
+                    const middlePiece = currentBoard[opponentRow][opponentCol];
+                    if (isOpponent(middlePiece, piece)) {
+                        captures.push({
+                            fromRow: row,
+                            fromCol: col,
+                            toRow,
+                            toCol,
+                            isCapture: true,
+                            capturedRow: opponentRow,
+                            capturedCol: opponentCol
+                        });
+                    }
+                }
+            }
+        }
+        return captures;
+    }
+
+    function findCaptureSequences(fromRow, fromCol, currentBoard) {
+        const piece = currentBoard[fromRow][fromCol];
+        const moves = getPossibleCapturesForPiece(fromRow, fromCol, currentBoard);
+        let sequences = [];
+
+        if (moves.length === 0) {
+            return [];
+        }
+
+        for (const move of moves) {
+            const nextBoard = JSON.parse(JSON.stringify(currentBoard));
+            const { toRow, toCol, capturedRow, capturedCol } = move;
+            
+            let newPiece = piece;
+            if (piece === BLACK_PIECE && toRow === BOARD_SIZE - 1) {
+                newPiece = BLACK_KING;
+            } else if (piece === WHITE_PIECE && toRow === 0) {
+                newPiece = WHITE_KING;
+            }
+            nextBoard[toRow][toCol] = newPiece;
+            nextBoard[fromRow][fromCol] = EMPTY;
+            nextBoard[capturedRow][capturedCol] = EMPTY;
+
+            const subsequentSequences = findCaptureSequences(toRow, toCol, nextBoard);
+
+            if (subsequentSequences.length === 0) {
+                sequences.push([move]);
+            } else {
+                for (const subSequence of subsequentSequences) {
+                    sequences.push([move, ...subSequence]);
+                }
+            }
+        }
+
+        return sequences;
+    }
+
+    function getPossibleMovesForPiece(row, col) {
+        const piece = board[row][col];
+        if (piece === EMPTY) return { simples: [] };
+
         const simples = [];
         const isKing = piece === BLACK_KING || piece === WHITE_KING;
         const forwardDir = isBlack(piece) ? 1 : -1;
@@ -389,27 +504,13 @@ O jogo de damas com 64 casas não tem a regra do "sopro", que é a remoção de 
                 }
             }
         }
-
-        const captureDirections = [[1, 1], [1, -1], [-1, 1], [-1, -1]];
-        for (const [dRow, dCol] of captureDirections) {
-            const opponentRow = row + dRow;
-            const opponentCol = col + dCol;
-            const toRow = row + dRow * 2;
-            const toCol = col + dCol * 2;
-
-            if (isOnBoard(toRow, toCol) && board[toRow][toCol] === EMPTY) {
-                const middlePiece = board[opponentRow][opponentCol];
-                if (isOpponent(middlePiece, piece)) {
-                    captures.push({ fromRow: row, fromCol: col, toRow, toCol, isCapture: true });
-                }
-            }
-        }
-        return { captures, simples };
+        return { simples };
     }
 
     function calculateTurnMoves() {
-        let allCaptures = [];
+        if (isGameOver) return;
         let allSimples = [];
+        let allCaptureSequences = [];
 
         for (let r = 0; r < BOARD_SIZE; r++) {
             for (let c = 0; c < BOARD_SIZE; c++) {
@@ -417,18 +518,45 @@ O jogo de damas com 64 casas não tem a regra do "sopro", que é a remoção de 
                 const isCurrentPlayerPiece = (currentPlayer === BLACK_PIECE && isBlack(piece)) || (currentPlayer === WHITE_PIECE && isWhite(piece));
 
                 if (isCurrentPlayerPiece) {
-                    const moves = getPossibleMovesForPiece(r, c);
-                    allCaptures.push(...moves.captures);
-                    allSimples.push(...moves.simples);
+                    const { simples } = getPossibleMovesForPiece(r, c);
+                    allSimples.push(...simples);
+
+                    const sequences = findCaptureSequences(r, c, board);
+                    if (sequences.length > 0) {
+                        allCaptureSequences.push(...sequences);
+                    }
                 }
             }
         }
 
-        mandatoryMoves = allCaptures.length > 0 ? allCaptures : allSimples;
+        if (allCaptureSequences.length > 0) {
+            let maxLen = 0;
+            for (const seq of allCaptureSequences) {
+                if (seq.length > maxLen) {
+                    maxLen = seq.length;
+                }
+            }
+
+            const longestSequences = allCaptureSequences.filter(seq => seq.length === maxLen);
+            
+            mandatoryMoves = longestSequences.map(seq => {
+                const move = seq[0];
+                move.fullSequence = seq;
+                return move;
+            });
+        } else {
+            mandatoryMoves = allSimples;
+        }
 
         if (mandatoryMoves.length === 0) {
+            isGameOver = true;
             const winner = currentPlayer === BLACK_PIECE ? 'Brancas' : 'Pretas';
-            statusDisplay.textContent = `${winner} Venceram! (Oponente sem movimentos)`;
+            const winnerText = `${winner} Venceram! (Oponente sem movimentos). Game Over!`;
+            speak(winnerText, () => {
+                statusDisplay.textContent = 'Game Over!';
+            });
+            canvas.removeEventListener('click', handleCanvasClick);
+            showNewGameButton();
         }
     }
 
@@ -472,8 +600,8 @@ O jogo de damas com 64 casas não tem a regra do "sopro", que é a remoção de 
         board[fromRow][fromCol] = EMPTY;
 
         if (isCapture) {
-            const capturedRow = fromRow + (toRow - fromRow) / 2;
-            const capturedCol = fromCol + (toCol - fromCol) / 2;
+            const capturedRow = move.capturedRow;
+            const capturedCol = move.capturedCol;
             board[capturedRow][capturedCol] = EMPTY;
             playSound(captureSound);
         } else {
@@ -486,21 +614,21 @@ O jogo de damas com 64 casas não tem a regra do "sopro", que é a remoção de 
             board[toRow][toCol] = WHITE_KING;
         }
 
-        if (isCapture) {
-            const chainCaptures = getPossibleMovesForPiece(toRow, toCol).captures;
-            if (chainCaptures.length > 0) {
-                selectedPiece = { row: toRow, col: toCol };
-                mandatoryMoves = chainCaptures;
-                drawBoard();
-                updateScore();
-                return;
-            }
+        if (isCapture && move.fullSequence && move.fullSequence.length > 1) {
+            const nextMove = move.fullSequence[1];
+            nextMove.fullSequence = move.fullSequence.slice(1);
+            
+            selectedPiece = { row: toRow, col: toCol };
+            mandatoryMoves = [nextMove];
+            drawBoard();
+            updateScore();
+            return;
         }
 
         selectedPiece = null;
         switchPlayer();
 
-        if (narrate) {
+        if (narrate && isGameOver === false) {
             const fromSquareStr = getSquareName(fromRow, fromCol);
             const toSquareStr = getSquareName(toRow, toCol);
             const nextPlayerName = (currentPlayer === BLACK_PIECE) ? 'Pretas' : 'Brancas';
@@ -548,16 +676,10 @@ O jogo de damas com 64 casas não tem a regra do "sopro", que é a remoção de 
         calculateTurnMoves();
     }
 
-    function updateStatus(shouldSpeak = true) {
-        const playerName = currentPlayer === BLACK_PIECE ? 'Pretas' : 'Brancas';
-        statusDisplay.innerHTML = `Vez das peças <span class="highlight-turn">${playerName}</span>`;
-        if (shouldSpeak) {
-            const statusText = `Vez das peças ${playerName}`;
-            speak(statusText);
-        }
-    }
+    
 
     function updateScore() {
+        if (isGameOver) return;
         let blackCount = 0;
         let whiteCount = 0;
         for (let row = 0; row < BOARD_SIZE; row++) {
@@ -578,12 +700,41 @@ O jogo de damas com 64 casas não tem a regra do "sopro", que é a remoção de 
             scoreDisplay.innerHTML = `<span>${blackText}</span> - <span class="highlight-turn">${whiteText}</span>`;
         }
 
+        let winnerText = null;
         if (whiteCount === 0) {
-            statusDisplay.textContent = 'As Pretas Venceram!';
-            canvas.removeEventListener('click', handleCanvasClick);
+            winnerText = 'As Pretas Venceram!';
         } else if (blackCount === 0) {
-            statusDisplay.textContent = 'As Brancas Venceram!';
-            canvas.removeEventListener('click', handleCanvasClick);
+            winnerText = 'As Brancas Venceram!';
+        }
+
+        if (winnerText) {
+            isGameOver = true;
+            statusDisplay.textContent = winnerText;
+            speechSynthesis.cancel();
+            speechQueue.length = 0;
+            isSpeaking = false;
+        }
+    }
+
+    function updateStatus(shouldSpeak = true) {
+        if (isGameOver === false) {
+            const playerName = currentPlayer === BLACK_PIECE ? 'Pretas' : 'Brancas';
+            statusDisplay.innerHTML = `Vez das peças <span class="highlight-turn">${playerName}</span>`;
+            if (shouldSpeak) {
+                const statusText = `Vez das peças ${playerName}`;
+                speak(statusText);
+            }
+        }
+    }
+
+    function showNewGameButton() {
+        newGameBtn.style.display = 'block';
+        window.addEventListener('keydown', handleNewGameKey);
+    }
+
+    function handleNewGameKey(e) {
+        if (e.key.toUpperCase() === 'O') {
+            initializeBoard();
         }
     }
 
