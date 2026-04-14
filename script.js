@@ -311,7 +311,7 @@ O jogo de damas com 64 casas não tem a regra do "sopro", que é a remoção de 
             e.preventDefault();
             toggleNarration();
         }
-        if (e.key.toUpperCase() === 'I') {
+        if (e.key.toUpperCase() === 'J') {
             e.preventDefault();
             readInstructions();
         }
@@ -620,7 +620,7 @@ O jogo de damas com 64 casas não tem a regra do "sopro", que é a remoção de 
 
     function handleCanvasClick(event) {
         const rect = canvas.getBoundingClientRect();
-        
+
         // Calcula a escala para que as proporções originais funcionem em tabuleiros reduzidos (mobile)
         const scaleX = canvas.width / rect.width;
         const scaleY = canvas.height / rect.height;
@@ -810,7 +810,7 @@ O jogo de damas com 64 casas não tem a regra do "sopro", que é a remoção de 
     const isChromium = !!window.chrome || navigator.userAgent.includes("Chrome") || navigator.userAgent.includes("CriOS");
 
     const playWelcomeSpeech = () => {
-        speak('Bem-vindo ao Jogo de Damas Acessível! Use comandos de voz ou clique com o mouse para mover as peças. Para detalhes, pressione "I" para ouvir as instruções de como jogar. Hora de jogar!', () => {
+        speak('Bem-vindo ao Jogo de Damas Acessível! Use comandos de voz ou clique com o mouse para mover as peças. Para detalhes, pressione "J" para ouvir as instruções de como jogar. Hora de jogar!', () => {
             const playerName = currentPlayer === BLACK_PIECE ? 'Pretas' : 'Brancas';
             speak(`Vez das peças ${playerName}`);
         });
