@@ -618,8 +618,13 @@ O jogo de damas com 64 casas não tem a regra do "sopro", que é a remoção de 
 
     function handleCanvasClick(event) {
         const rect = canvas.getBoundingClientRect();
-        const x = event.clientX - rect.left;
-        const y = event.clientY - rect.top;
+        
+        // Calcula a escala para que as proporções originais funcionem em tabuleiros reduzidos (mobile)
+        const scaleX = canvas.width / rect.width;
+        const scaleY = canvas.height / rect.height;
+
+        const x = (event.clientX - rect.left) * scaleX;
+        const y = (event.clientY - rect.top) * scaleY;
 
         const col = Math.floor(x / SQUARE_SIZE);
         const row = Math.floor(y / SQUARE_SIZE);
