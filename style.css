@@ -78,6 +78,7 @@ canvas {
 
 #voice-toggle,
 #narration-toggle,
+#read-instructions-btn,
 #read-rules-btn,
 #contrast-toggle,
 #new-game-btn {
@@ -124,6 +125,7 @@ canvas {
     text-align: left;
 }
 
+#read-instructions-btn,
 #read-rules-btn {
     margin-top: 10px;
 }

@@ -64,6 +64,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const scoreDisplay = document.getElementById('score');
     const voiceToggleBtn = document.getElementById('voice-toggle');
     const narrationToggleBtn = document.getElementById('narration-toggle');
+    const readInstructionsBtn = document.getElementById('read-instructions-btn');
     const readRulesBtn = document.getElementById('read-rules-btn');
     const contrastToggleBtn = document.getElementById('contrast-toggle');
     const newGameBtn = document.getElementById('new-game-btn');
@@ -148,6 +149,24 @@ document.addEventListener('DOMContentLoaded', () => {
         speak(isHighContrast ? 'Alto contraste ativado.' : 'Alto contraste desativado.');
     }
 
+    const instructionsText = `
+Como Jogar:
+
+Use comandos de voz ou clique com o mouse para mover as peças.
+
+Para ativar o comando de voz, clique no botão ou pressione Barra de Espaço no teclado.
+
+Com o comando de voz ativado diga o nome da casa que deseja selecionar, por exemplo, F6.
+
+Para cancelar a seleção, diga "cancelar".
+
+Para ativar ou desativar o Alto contraste, clique no botão Alto Contraste ou pressione A no teclado.
+
+Para ativar ou desativar a narração, clique no botão Ativar / Desativar Narração ou pressione N no teclado.
+
+Para ouvir as regras do jogo, clique no botão Ouvir as regras ou pressione R no teclado.
+    `;
+
     const rulesText = `
 Regras do Jogo:
 No jogo de damas com 64 casas, o objetivo é capturar ou imobilizar as peças do adversário, usando 12 peças para cada jogador, que se movem diagonalmente pelas casas escuras do tabuleiro. O jogador deve capturar obrigatoriamente peças, escolhendo o lance que capture o maior número de peças se houver mais de uma opção, e ao chegar na oitava linha, a peça é promovida a "dama", que pode se mover para frente e para trás sem restrições de casas. O jogo termina quando um jogador captura todas as peças do adversário, ou elas ficam imobilizadas, ou há um empate.
@@ -184,6 +203,13 @@ Quando a mesma posição se repete no tabuleiro pela terceira vez, a partida é 
 7. Diferenças com outras damas: 
 O jogo de damas com 64 casas não tem a regra do "sopro", que é a remoção de uma peça tocada pelo jogador.
 `;
+
+    function readInstructions() {
+        speechSynthesis.cancel();
+        speechQueue.length = 0;
+        isSpeaking = false;
+        speak(instructionsText);
+    }
 
     function readRules() {
         speechSynthesis.cancel(); // Para a fala atual
@@ -269,6 +295,7 @@ O jogo de damas com 64 casas não tem a regra do "sopro", que é a remoção de 
     // Adiciona ouvintes de evento
     voiceToggleBtn.addEventListener('click', toggleVoiceCommands);
     narrationToggleBtn.addEventListener('click', toggleNarration);
+    readInstructionsBtn.addEventListener('click', readInstructions);
     readRulesBtn.addEventListener('click', readRules);
     contrastToggleBtn.addEventListener('click', toggleContrast);
     newGameBtn.addEventListener('click', initializeBoard);
@@ -281,6 +308,10 @@ O jogo de damas com 64 casas não tem a regra do "sopro", que é a remoção de 
         if (e.key.toUpperCase() === 'N') {
             e.preventDefault();
             toggleNarration();
+        }
+        if (e.key.toUpperCase() === 'I') {
+            e.preventDefault();
+            readInstructions();
         }
         if (e.key.toUpperCase() === 'R') {
             e.preventDefault();
@@ -772,7 +803,7 @@ O jogo de damas com 64 casas não tem a regra do "sopro", que é a remoção de 
     const isChromium = !!window.chrome || navigator.userAgent.includes("Chrome") || navigator.userAgent.includes("CriOS");
 
     const playWelcomeSpeech = () => {
-        speak('Bem-vindo ao Jogo de Damas Acessível! Use comandos de voz ou clique com o mouse para mover as peças. Para detalhes, pressione R para regras. Hora de jogar!', () => {
+        speak('Bem-vindo ao Jogo de Damas Acessível! Use comandos de voz ou clique com o mouse para mover as peças. Para detalhes, pressione "I" para ouvir as instruções de como jogar. Hora de jogar!', () => {
             const playerName = currentPlayer === BLACK_PIECE ? 'Pretas' : 'Brancas';
             speak(`Vez das peças ${playerName}`);
         });
