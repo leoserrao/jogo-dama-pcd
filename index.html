@@ -1,24 +1,16 @@
 <!DOCTYPE html>
 <html lang="pt-br">
+
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Jogo de Damas Acessível</title>
   <link rel="stylesheet" href="style.css">
 </head>
+
 <body>
   <h1>Jogo de Damas Acessível</h1>
-  <div id="rules">
-    <h2>Como Jogar</h2>
-    <p>Use comandos de voz ou clique com o mouse para mover as peças.</p>
-    <p>Para <strong>ativar o comando de voz</strong>, clique no botão ou pressione <strong>Barra de Espaço</strong> no teclado.</p>
-    <p>Com o comando de voz ativado diga o nome da casa que deseja selecionar, por exemplo, F6.</p>
-    <p>Para cancelar a seleção, diga "cancelar".</p>
-    <p>Para <strong>ativar ou desativar o Alto contraste</strong>, clique no botão <strong>Alto Contraste</strong> ou pressione <strong>A</strong> no teclado.</p>
-    <p>Para <strong>ativar ou desativar a narração</strong>, clique no botão <strong>Ativar / Desativar Narração</strong> ou pressione <strong>N</strong> no teclado.</p>
-    <p>Para ouvir as <strong>regras do jogo</strong>, clique no botão <strong>Ouvir as regras</strong> ou pressione <strong>R</strong> no teclado.</p>
-    <button id="read-rules-btn">Ouvir as Regras (R)</button>
-  </div>
+
   <div id="game-wrapper">
     <div id="board-container">
       <div id="row-labels">
@@ -45,19 +37,38 @@
     </div>
   </div>
   <div id="status">Vez das peças Pretas</div>
-  <button id="new-game-btn" style="display: none;">Novo Jogo (O)</button>
+  <button id="new-game-btn">Novo Jogo (O)</button>
   <div id="score">Pretas: 12 - Brancas: 12</div>
   <div id="controls">
     <button id="voice-toggle">Ativar Comandos de Voz (Espaço)</button>
     <button id="narration-toggle">Desativar Narração (N)</button>
     <button id="contrast-toggle">Alto Contraste (A)</button>
   </div>
-
+  <div id="instructions">
+    <h2>Como Jogar</h2>
+    <p>Use comandos de voz ou clique com o mouse para mover as peças.</p>
+    <p>Para <strong>ativar o comando de voz</strong>, clique no botão ou pressione <strong>Barra de Espaço</strong> no
+      teclado.</p>
+    <p>Com o comando de voz ativado diga o nome da casa que deseja selecionar, por exemplo, F6.</p>
+    <p>Para cancelar a seleção, diga "cancelar".</p>
+    <p>Para <strong>ativar ou desativar o Alto contraste</strong>, clique no botão <strong>Alto Contraste</strong> ou
+      pressione <strong>A</strong> no teclado.</p>
+    <p>Para <strong>ativar ou desativar a narração</strong>, clique no botão <strong>Ativar / Desativar
+        Narração</strong> ou pressione <strong>N</strong> no teclado.</p>
+    <p>Para ouvir as <strong>regras do jogo</strong>, clique no botão <strong>Ouvir as regras</strong> ou pressione
+      <strong>R</strong> no teclado.
+    </p>
+    <button id="read-rules-btn">Ouvir as Regras (R)</button>
+  </div>
   <div id="rules">
     <h2>Regras do Jogo de Damas com 64 Casas</h2>
-    <p>No jogo de damas com 64 casas, o objetivo é capturar ou imobilizar as peças do adversário, usando 12 peças para cada jogador, que se movem diagonalmente pelas casas escuras do tabuleiro.</p>
-    <p>O jogador deve capturar obrigatoriamente peças, escolhendo o lance que capture o maior número de peças se houver mais de uma opção, e ao chegar na oitava linha, a peça é promovida a "dama", que pode se mover para frente e para trás sem restrições de casas.</p>
-    <p>O jogo termina quando um jogador captura todas as peças do adversário, ou elas ficam imobilizadas, ou há um empate.</p>
+    <p>No jogo de damas com 64 casas, o objetivo é capturar ou imobilizar as peças do adversário, usando 12 peças para
+      cada jogador, que se movem diagonalmente pelas casas escuras do tabuleiro.</p>
+    <p>O jogador deve capturar obrigatoriamente peças, escolhendo o lance que capture o maior número de peças se houver
+      mais de uma opção, e ao chegar na oitava linha, a peça é promovida a "dama", que pode se mover para frente e para
+      trás sem restrições de casas.</p>
+    <p>O jogo termina quando um jogador captura todas as peças do adversário, ou elas ficam imobilizadas, ou há um
+      empate.</p>
     <h3>Regras Detalhadas:</h3>
     <h4>1. Posicionamento do Tabuleiro:</h4>
     <p>O tabuleiro possui 64 casas.</p>
@@ -72,14 +83,17 @@
     <h4>4. Captura de Peças:</h4>
     <p>A captura é feita ao saltar sobre a peça do adversário, que deve estar na casa seguinte, na diagonal.</p>
     <p>A captura é obrigatória.</p>
-    <p>Se houver mais de uma opção de captura, o jogador deve escolher o lance que capture o maior número de peças (Lei da Maioria).</p>
-    <p>A captura pode ser feita para frente e para trás, e o jogador deve continuar capturando em sequência (captura em cadeia), se houverem outras peças para capturar, mas sem parar no meio de uma captura múltipla.</p>
+    <p>Se houver mais de uma opção de captura, o jogador deve escolher o lance que capture o maior número de peças (Lei
+      da Maioria).</p>
+    <p>A captura pode ser feita para frente e para trás, e o jogador deve continuar capturando em sequência (captura em
+      cadeia), se houverem outras peças para capturar, mas sem parar no meio de uma captura múltipla.</p>
     <h4>5. Condições de Vitória:</h4>
     <p>Você vence se capturar todas as peças do seu oponente ou as deixar sem nenhuma possibilidade de movimento.</p>
     <h4>6. Empate:</h4>
     <p>O jogo termina em empate se os jogadores concordarem com o empate.</p>
     <p>Se ambos os jogadores ficarem com apenas uma dama, o jogo é declarado empatado.</p>
-    <p>Após 20 lances sucessivos de damas, sem que nenhuma peça seja movida ou capturada, a partida é declarada empatada.</p>
+    <p>Após 20 lances sucessivos de damas, sem que nenhuma peça seja movida ou capturada, a partida é declarada
+      empatada.</p>
     <p>Quando a mesma posição se repete no tabuleiro pela terceira vez, a partida é considerada empatada.</p>
     <h4>7. Diferenças com outras damas:</h4>
     <p>O jogo de damas com 64 casas não tem a regra do "sopro", que é a remoção de uma peça tocada pelo jogador.</p>
@@ -94,4 +108,5 @@
 
   <script src="script.js"></script>
 </body>
+
 </html>

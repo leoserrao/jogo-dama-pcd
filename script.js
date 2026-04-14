@@ -5,33 +5,46 @@ document.addEventListener('DOMContentLoaded', () => {
     let isNarrationActive = true; // Controla se a narração por voz está ativa
     let isGameOver = false;
 
+    window.currentUtterance = null; // Evita bug de Garbage Collection no Google Chrome
+
     function processSpeechQueue() {
         if (speechQueue.length === 0) {
             isSpeaking = false;
-            if (isVoiceCommandActive) {
-                recognition.start();
+            // Se o comando de voz estiver ativo, volta a escutar
+            if (isVoiceCommandActive && recognition) {
+                try {
+                    recognition.start();
+                } catch (e) { }
             }
             return;
         }
 
         isSpeaking = true;
-        if (isVoiceCommandActive) {
-            recognition.stop();
+        if (isVoiceCommandActive && recognition) {
+            try {
+                recognition.abort(); // Usa abort() ao invés de stop() para o Chrome lidar melhor com o desligamento rápido
+            } catch (e) { }
         }
 
         const { text, callback } = speechQueue.shift();
-        const utterance = new SpeechSynthesisUtterance(text);
-        utterance.lang = 'pt-BR';
-        utterance.rate = 1.2;
+        window.currentUtterance = new SpeechSynthesisUtterance(text);
+        window.currentUtterance.lang = 'pt-BR';
+        window.currentUtterance.rate = 1.2;
 
-        utterance.onend = () => {
+        window.currentUtterance.onend = () => {
             if (callback) {
                 callback();
             }
             processSpeechQueue();
         };
 
-        speechSynthesis.speak(utterance);
+        window.currentUtterance.onerror = (e) => {
+            console.warn("SpeechSynthesis erro - ignorando e prosseguindo:", e);
+            if (callback) callback();
+            processSpeechQueue(); // Continua fila se algo bloquear no Chrome
+        };
+
+        speechSynthesis.speak(window.currentUtterance);
     }
 
     function speak(text, callback) {
@@ -71,15 +84,26 @@ document.addEventListener('DOMContentLoaded', () => {
         };
 
         recognition.onerror = (event) => {
-            console.error('Erro no reconhecimento de voz:', event.error);
-            if (isVoiceCommandActive) {
-                setTimeout(() => recognition.start(), 500);
+            console.warn('Erro no reconhecimento de voz:', event.error);
+            // Ignora not-allowed ou aborted para não causar loop
+            if (isVoiceCommandActive && event.error !== 'not-allowed' && event.error !== 'aborted') {
+                setTimeout(() => {
+                    if (isVoiceCommandActive && !isSpeaking) {
+                        try { recognition.start(); } catch (e) { }
+                    }
+                }, 500);
+            } else if (event.error === 'not-allowed') {
+                isVoiceCommandActive = false;
+                voiceToggleBtn.textContent = 'Permissão de Voz Negada';
+                voiceToggleBtn.style.backgroundColor = '#d32f2f';
             }
         };
 
         recognition.onend = () => {
             if (isVoiceCommandActive && !isSpeaking) {
-                setTimeout(() => recognition.start(), 500);
+                setTimeout(() => {
+                    try { recognition.start(); } catch (e) { }
+                }, 500);
             }
         };
 
@@ -89,16 +113,17 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function toggleVoiceCommands() {
+        if (!recognition) return;
         isVoiceCommandActive = !isVoiceCommandActive;
         if (isVoiceCommandActive) {
             voiceToggleBtn.textContent = 'Desativar Comandos de Voz';
             voiceToggleBtn.style.backgroundColor = '#4CAF50';
-            recognition.start();
+            try { recognition.start(); } catch (e) { }
             speak('Comandos de voz ativados');
         } else {
             voiceToggleBtn.textContent = 'Ativar Comandos de Voz';
             voiceToggleBtn.style.backgroundColor = '';
-            recognition.stop();
+            try { recognition.abort(); } catch (e) { }
             speak('Comandos de voz desativados');
         }
     }
@@ -446,7 +471,7 @@ O jogo de damas com 64 casas não tem a regra do "sopro", que é a remoção de 
         for (const move of moves) {
             const nextBoard = JSON.parse(JSON.stringify(currentBoard));
             const { toRow, toCol, capturedRow, capturedCol } = move;
-            
+
             let newPiece = piece;
             if (piece === BLACK_PIECE && toRow === BOARD_SIZE - 1) {
                 newPiece = BLACK_KING;
@@ -538,7 +563,7 @@ O jogo de damas com 64 casas não tem a regra do "sopro", que é a remoção de 
             }
 
             const longestSequences = allCaptureSequences.filter(seq => seq.length === maxLen);
-            
+
             mandatoryMoves = longestSequences.map(seq => {
                 const move = seq[0];
                 move.fullSequence = seq;
@@ -617,7 +642,7 @@ O jogo de damas com 64 casas não tem a regra do "sopro", que é a remoção de 
         if (isCapture && move.fullSequence && move.fullSequence.length > 1) {
             const nextMove = move.fullSequence[1];
             nextMove.fullSequence = move.fullSequence.slice(1);
-            
+
             selectedPiece = { row: toRow, col: toCol };
             mandatoryMoves = [nextMove];
             drawBoard();
@@ -676,7 +701,7 @@ O jogo de damas com 64 casas não tem a regra do "sopro", que é a remoção de 
         calculateTurnMoves();
     }
 
-    
+
 
     function updateScore() {
         if (isGameOver) return;
@@ -743,8 +768,34 @@ O jogo de damas com 64 casas não tem a regra do "sopro", que é a remoção de 
     canvas.addEventListener('click', handleCanvasClick);
 
     initializeBoard();
-    speak('Bem-vindo ao Jogo de Damas Acessível! Como jogar. Use comandos de voz ou clique com o mouse para mover as peças. Para ativar o comando de voz, clique no botão Ativar comandos de voz ou pressione Barra de Espaço no teclado. Com o comando de voz ativado diga o nome da casa que deseja selecionar, por exemplo, F6. Para cancelar a seleção, diga cancelar. Para ativar ou desativar o Alto contraste, clique no botão Alto Contraste ou pressione A no teclado. Para ativar ou desativar a narração, clique no botão Ativar / Desativar Narração ou pressione N no teclado. Para ouvir as regras do jogo, clique no botão Ouvir as regras ou pressione R no teclado. Hora de jogar!', () => {
-        const playerName = currentPlayer === BLACK_PIECE ? 'Pretas' : 'Brancas';
-        speak(`Vez das peças ${playerName}`);
-    });
+
+    const isChromium = !!window.chrome || navigator.userAgent.includes("Chrome") || navigator.userAgent.includes("CriOS");
+
+    const playWelcomeSpeech = () => {
+        speak('Bem-vindo ao Jogo de Damas Acessível! Use comandos de voz ou clique com o mouse para mover as peças. Para detalhes, pressione R para regras. Hora de jogar!', () => {
+            const playerName = currentPlayer === BLACK_PIECE ? 'Pretas' : 'Brancas';
+            speak(`Vez das peças ${playerName}`);
+        });
+    };
+
+    if (isChromium) {
+        let hasStartedInteraction = false;
+        const enableAudioContext = () => {
+            if (!hasStartedInteraction) {
+                hasStartedInteraction = true;
+                if (speechSynthesis && speechSynthesis.resume) {
+                    speechSynthesis.resume();
+                }
+                playWelcomeSpeech();
+                document.removeEventListener('click', enableAudioContext);
+                document.removeEventListener('keydown', enableAudioContext);
+            }
+        };
+        // Chrome e derivados requerem interação para liberar o SpeechSynthesis
+        document.addEventListener('click', enableAudioContext);
+        document.addEventListener('keydown', enableAudioContext);
+    } else {
+        // Outros navegadores (como Firefox e Safari antigo) ou leitores dedicados ativam imediatamente
+        playWelcomeSpeech();
+    }
 });
