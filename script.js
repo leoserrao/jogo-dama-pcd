@@ -165,6 +165,8 @@ Para ativar ou desativar o Alto contraste, clique no botão Alto Contraste ou pr
 Para ativar ou desativar a narração, clique no botão Ativar / Desativar Narração ou pressione N no teclado.
 
 Para ouvir as regras do jogo, clique no botão Ouvir as regras ou pressione R no teclado.
+
+Para acessibilidade em Libras, clique no ícone do VLibras, o boneco azul, no canto da tela. O avatar traduzirá os textos da página para a Língua Brasileira de Sinais.
     `;
 
     const rulesText = `
